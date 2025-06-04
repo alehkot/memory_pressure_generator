@@ -35,7 +35,8 @@ void signalHandler(int sig) {
 
 void allocate_memory(int memory_mb, int steps, int delay_ms) {
     int memory_bytes = memory_mb * MB_SIZE;
-    int step_size = memory_bytes / steps;
+    int base_step = memory_bytes / steps;
+    int remainder = memory_bytes % steps;
     char *memory = (char *)malloc(memory_bytes);
     if (memory == NULL) {
         printf("Memory allocation failed.\n");
@@ -44,13 +45,22 @@ void allocate_memory(int memory_mb, int steps, int delay_ms) {
 
     signal(SIGUSR1, signalHandler);  // Set up signal handler
 
+    int offset = 0;
     for (int i = 0; i < steps; i++) {
         while (paused) {
             pause();  // Wait for next signal when paused
         }
-        memset(memory + i * step_size, 0xAA, step_size);
-        double percent_allocated = 100.0 * (i + 1) / steps;  // Calculate the percentage allocated
-        printf("Process %d: Allocated %d MB of memory in step %d/%d (%.2f%% of total).\n", getpid(), memory_mb / steps, i + 1, steps, percent_allocated);
+
+        int current_step = base_step + (i < remainder ? 1 : 0);
+
+        if (current_step > 0) {
+            memset(memory + offset, 0xAA, current_step);
+        }
+        offset += current_step;
+
+        double percent_allocated = 100.0 * offset / memory_bytes;
+        printf("Process %d: Allocated %.2f MB of memory in step %d/%d (%.2f%% of total).\n",
+               getpid(), (double)current_step / MB_SIZE, i + 1, steps, percent_allocated);
         usleep(delay_ms * 1000);  // Delay between steps
     }
 
