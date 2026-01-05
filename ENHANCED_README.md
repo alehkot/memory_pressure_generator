@@ -71,31 +71,83 @@ Basic memory allocation tools may fail to trigger LMK on emulators because:
 - ADB (Android Debug Bridge)
 - Connected Android emulator or device
 
-### Automated Build & Deploy
+### Understanding Architecture Support
 
-The easiest way to build and deploy:
+**Important**: The build architecture must match your emulator/device architecture.
+
+#### ARM64 (Most Common on Apple Silicon Macs)
+- **Use for**: ARM64 emulators on M1/M2/M3 Macs, ARM64 physical devices
+- **Emulator ABI**: `arm64-v8a`
+- Modern emulators on Apple Silicon Macs run natively in ARM64
+
+#### x86_64 (Intel-based Emulators)
+- **Use for**: x86_64 emulators on Intel Macs/PCs
+- **Emulator ABI**: `x86_64` or `x86`
+- Older emulators or those specifically configured for x86
+
+**Check your emulator architecture:**
+```bash
+adb shell getprop ro.product.cpu.abi
+# Output: arm64-v8a (use ARM64 build)
+# Output: x86_64 (use x86_64 build)
+```
+
+### Automated Build & Deploy (Recommended)
+
+The build script **automatically detects** your emulator architecture and host platform:
 
 ```bash
 chmod +x build_and_deploy.sh
-./build_and_deploy.sh [optional_ndk_path]
+./build_and_deploy.sh
+```
+
+**Architecture-specific builds:**
+```bash
+# Auto-detect (recommended)
+./build_and_deploy.sh
+
+# Force ARM64 build (for M1/M2/M3 Mac emulators)
+./build_and_deploy.sh . arm64
+
+# Force x86_64 build (for Intel emulators)
+./build_and_deploy.sh . x86_64
+
+# Build for all architectures
+./build_and_deploy.sh . all
 ```
 
 The script will:
-- Auto-detect your NDK installation
-- Build both original and enhanced versions
-- Deploy to connected device/emulator
-- Set executable permissions
+- Detect macOS ARM64 (Apple Silicon M1/M2/M3) vs Intel
+- Auto-detect NDK installation
+- Auto-detect connected device/emulator architecture
+- Build for the correct target architecture
+- Deploy and configure permissions
+- Show recommended memory allocation for your device
 
 ### Manual Build
 
-For Mac M1/M2:
+#### For ARM64 Emulators (M1/M2/M3 Macs or ARM64 devices)
+
+**Mac (Apple Silicon M1/M2/M3):**
 ```bash
 /Users/[username]/Library/Android/sdk/ndk/[version]/toolchains/llvm/prebuilt/darwin-x86_64/bin/aarch64-linux-android30-clang memory_pressure_generator_enhanced.c -o memory_pressure_generator_enhanced
 ```
 
-For Linux:
+**Linux:**
 ```bash
 ~/Android/Sdk/ndk/[version]/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android30-clang memory_pressure_generator_enhanced.c -o memory_pressure_generator_enhanced
+```
+
+#### For x86_64 Emulators (Intel Macs/PCs)
+
+**Mac (Intel):**
+```bash
+/Users/[username]/Library/Android/sdk/ndk/[version]/toolchains/llvm/prebuilt/darwin-x86_64/bin/x86_64-linux-android30-clang memory_pressure_generator_enhanced.c -o memory_pressure_generator_enhanced
+```
+
+**Linux:**
+```bash
+~/Android/Sdk/ndk/[version]/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android30-clang memory_pressure_generator_enhanced.c -o memory_pressure_generator_enhanced
 ```
 
 ### Manual Deploy
@@ -242,6 +294,34 @@ Android LMK daemon typically uses:
 When these thresholds are exceeded, LMK starts killing processes.
 
 ## Troubleshooting
+
+### Binary Won't Run or Crashes Immediately?
+
+**Architecture Mismatch** - This is the most common issue!
+
+1. **Check your emulator architecture:**
+   ```bash
+   adb shell getprop ro.product.cpu.abi
+   ```
+
+2. **Match your build to the output:**
+   - `arm64-v8a` → Rebuild with `./build_and_deploy.sh . arm64`
+   - `x86_64` or `x86` → Rebuild with `./build_and_deploy.sh . x86_64`
+
+3. **Common scenarios:**
+   - **M1/M2/M3 Mac**: Most likely ARM64 emulator (`arm64-v8a`)
+   - **Intel Mac/PC**: Could be either, check with command above
+   - **Error "cannot execute binary file"**: Wrong architecture!
+
+**Solution:**
+```bash
+# Let the script auto-detect (easiest)
+./build_and_deploy.sh
+
+# Or force the correct architecture
+./build_and_deploy.sh . arm64  # For ARM64 emulators
+./build_and_deploy.sh . x86_64  # For x86_64 emulators
+```
 
 ### LMK Not Triggering?
 

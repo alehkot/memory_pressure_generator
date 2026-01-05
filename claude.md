@@ -33,9 +33,37 @@ The tool allocates memory gradually using multiple processes:
 
 ## Build Process
 
-Requires Android NDK toolchain. Example for Mac M1:
+Requires Android NDK toolchain. The build architecture must match the target emulator/device.
+
+### Architecture Support
+
+**ARM64 (aarch64):**
+- Use for: ARM64 emulators on M1/M2/M3 Macs, ARM64 physical devices
+- Compiler: `aarch64-linux-android30-clang`
+- Common on modern Apple Silicon Macs
+
+**x86_64:**
+- Use for: x86_64 emulators on Intel Macs/PCs
+- Compiler: `x86_64-linux-android30-clang`
+- Older emulators or Intel-based systems
+
+### Build Examples
+
+**For ARM64 (Mac M1/M2/M3):**
 ```bash
 /Users/alehkot/Library/Android/sdk/ndk/26.2.11394342/toolchains/llvm/prebuilt/darwin-x86_64/bin/aarch64-linux-android30-clang memory_pressure_generator.c -o memory_pressure_generator
+```
+
+**For x86_64 (Intel emulators):**
+```bash
+/Users/alehkot/Library/Android/sdk/ndk/26.2.11394342/toolchains/llvm/prebuilt/darwin-x86_64/bin/x86_64-linux-android30-clang memory_pressure_generator.c -o memory_pressure_generator
+```
+
+**Automated build (recommended):**
+```bash
+./build_and_deploy.sh  # Auto-detects architecture
+./build_and_deploy.sh . arm64  # Force ARM64
+./build_and_deploy.sh . x86_64  # Force x86_64
 ```
 
 ## Deployment
